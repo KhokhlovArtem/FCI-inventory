@@ -61,18 +61,31 @@ $cred = Get-Credential -Message 'Учётные данные SQL'
 `MSSQL-inventory.ps1` находит службы `MSSQLSERVER` и `MSSQL$<InstanceName>`.
 Запущенные экземпляры инвентаризируются, а для остановленных или недоступных
 экземпляров создаётся отдельная строка CSV со статусом `Unavailable` и причиной
-в поле `Notes`.
+в поле `Notes`. Скрипт инвентаризирует только локальные экземпляры: default
+instance подключается через `.`, named instance -- через `.\<InstanceName>`.
+Фактическая идентичность SQL Server определяется после подключения через
+`SERVERPROPERTY`, поэтому имя сервера не задаётся и не хранится в коде.
 
 В отчёт попадают файлы пользовательских и системных БД: `master`, `model`,
 `msdb` и `tempdb`. Одна строка соответствует одному файлу БД.
 
 Поля отчёта `MSSQL-inv-DBFiles`:
 
-- `InstanceName`, `ServiceName`, `ServiceStatus`, `InstanceAvailability`
-- `DatabaseName`, `DatabaseState`, `LogicalFileName`, `FileType`, `FilePath`
-- `FileSizeMB`, `FileSizeGB` - полный выделенный размер файла
-- `UsedSpaceMB`, `UsedSpaceGB` - занятое пространство по данным SQL Server
-- `Notes` - причина отсутствия данных, включая остановленный экземпляр или offline БД
+- `ComputerName`, `ConnectionTarget`, `SqlServerName`, `SqlMachineName`, `SqlInstanceName`
+- `ServiceName`, `ServiceStatus`, `InstanceAvailability`, `InventoryComplete`
+- `DatabaseId`, `DatabaseName`, `DatabaseState`, `LogicalFileName`, `FileType`, `FilePath`
+- `FileAllocatedSizeMB`, `FileAllocatedSizeGB` - выделенный размер файла
+- `FileUsedSpaceMB`, `FileUsedSpaceGB` - занятое пространство конкретного ROWS-файла
+- `DatabaseLogUsedSpaceMB`, `DatabaseLogUsedSpaceGB` - агрегат занятого места во всех LOG-файлах БД
+- `UsedSpaceScope`, `DatabaseLogUsedSpaceScope`, `Notes` - область применимости и причины отсутствия данных
+
+SQL Server не предоставляет достоверное занятое место для каждого отдельного
+LOG-файла. Поэтому для LOG-строк `FileUsedSpace*` остаются пустыми, а
+`DatabaseLogUsedSpace*` содержит агрегированное использование журнала БД.
+
+По умолчанию отчёт и лог создаются в `reports\` и `logs\` рядом со скриптом,
+независимо от текущего каталога PowerShell. Относительный `-OutputDirectory`
+также разрешается относительно каталога скрипта.
 
 По умолчанию используется Windows-аутентификация текущего пользователя. Для
 SQL-аутентификации предусмотрены переменные окружения
