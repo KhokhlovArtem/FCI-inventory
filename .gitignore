@@ -3,7 +3,7 @@
 .env.*
 !.env.example
 
-logs/*.log
-reports/*.csv
+logs/
+reports/
 !logs/.gitkeep
 !reports/.gitkeep
